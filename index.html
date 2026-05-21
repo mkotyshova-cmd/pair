@@ -368,6 +368,31 @@
     scroll-snap-align: start;
   }
 
+  .carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.45rem;
+    margin: -0.5rem 0 1.5rem;
+  }
+
+  .carousel-dots .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    transition: all 0.25s ease;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .carousel-dots .dot.active {
+    background: var(--ink);
+    width: 18px;
+    border-radius: 100px;
+  }
+
   .pair-card {
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -600,11 +625,12 @@
         </div>
         <div class="sample-field">
           <label>Body</label>
-          <textarea id="sampleBody" rows="1">Good typography is invisible. It guides the reader through content with effortless grace.</textarea>
+          <textarea id="sampleBody" rows="2">Good typography is invisible. It guides the reader through content with effortless grace.</textarea>
         </div>
       </div>
 
       <div class="carousel" id="carousel"></div>
+      <div class="carousel-dots" id="carouselDots"></div>
 
       <div class="btn-row">
         <button class="btn-secondary" id="newImageBtn">Upload new image</button>
@@ -637,6 +663,7 @@
   const identifiedName = $('identifiedName');
   const identifiedDesc = $('identifiedDesc');
   const carousel = $('carousel');
+  const carouselDots = $('carouselDots');
   const sampleHeading = $('sampleHeading');
   const sampleBody = $('sampleBody');
   const newImageBtn = $('newImageBtn');
@@ -864,7 +891,44 @@
     });
 
     carousel.scrollLeft = 0;
+    renderDots();
   }
+
+  function renderDots() {
+    carouselDots.innerHTML = '';
+    allPairs.forEach((_, i) => {
+      const dot = document.createElement('button');
+      dot.className = 'dot' + (i === 0 ? ' active' : '');
+      dot.setAttribute('aria-label', `Pair ${i + 1}`);
+      dot.addEventListener('click', () => scrollToPair(i));
+      carouselDots.appendChild(dot);
+    });
+  }
+
+  function scrollToPair(idx) {
+    const firstCard = carousel.querySelector('.pair-card');
+    if (!firstCard) return;
+    const step = firstCard.offsetWidth + parseFloat(getComputedStyle(carousel).gap || 0);
+    carousel.scrollTo({ left: step * idx, behavior: 'smooth' });
+  }
+
+  function updateActiveDot(idx) {
+    const dots = carouselDots.querySelectorAll('.dot');
+    dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+  }
+
+  // Sync dots as user scrolls the carousel
+  let lastDotIdx = 0;
+  carousel.addEventListener('scroll', () => {
+    const firstCard = carousel.querySelector('.pair-card');
+    if (!firstCard) return;
+    const step = firstCard.offsetWidth + parseFloat(getComputedStyle(carousel).gap || 0);
+    const idx = Math.round(carousel.scrollLeft / step);
+    if (idx !== lastDotIdx && idx >= 0 && idx < allPairs.length) {
+      lastDotIdx = idx;
+      updateActiveDot(idx);
+    }
+  });
 
   // ── Dynamic Google Fonts loader ──
   function loadGoogleFont(family, weight) {
