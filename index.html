@@ -492,6 +492,16 @@
     cursor: pointer;
     border-radius: 100px;
     transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+  }
+
+  .btn-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
   }
 
   .btn-primary { background: var(--ink); color: var(--cream); }
@@ -593,7 +603,15 @@
       <div class="pairs-grid" id="pairsGrid"></div>
 
       <div class="btn-row">
-        <button class="btn-primary" id="moreBtn">↻ More</button>
+        <button class="btn-primary" id="moreBtn">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/>
+            <path d="M3 21v-5h5"/>
+          </svg>
+          Try another
+        </button>
         <button class="btn-secondary" id="newImageBtn">Upload new image</button>
       </div>
     </div>
