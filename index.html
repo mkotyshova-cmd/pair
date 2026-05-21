@@ -98,6 +98,9 @@
 
   main { padding: 2rem 1.5rem 3rem; }
 
+  /* On results screen, tighten top spacing */
+  main.results-active { padding-top: 1.5rem; }
+
   .hero { text-align: center; margin-bottom: 2rem; }
 
   .hero h1 {
@@ -244,7 +247,7 @@
     padding: 1.25rem 1.5rem;
     border-left: 2px solid var(--accent);
     background: rgba(200, 80, 42, 0.04);
-    margin: 1.5rem 0;
+    margin: 0 0 1.5rem 0;
     border-radius: 0 6px 6px 0;
   }
 
@@ -314,7 +317,7 @@
 
   /* SAMPLE EDITOR */
   .sample-editor {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -354,11 +357,25 @@
   /* PAIRS */
   #resultsSection { display: none; }
 
-  .pairs-grid {
+  .carousel {
     display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-    margin-bottom: 1.5rem;
+    gap: 0.85rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    margin: 0 -1.5rem 1.5rem;
+    padding: 0.25rem 1.5rem 0.5rem;
+    scroll-padding-left: 1.5rem;
+  }
+
+  .carousel::-webkit-scrollbar { display: none; }
+
+  .carousel > .pair-card {
+    flex: 0 0 calc(100% - 3rem);
+    scroll-snap-align: start;
   }
 
   .pair-card {
@@ -586,7 +603,6 @@
         <div class="identified-desc" id="identifiedDesc"></div>
       </div>
 
-      <div class="section-title"><h2>Sample text</h2></div>
       <div class="sample-editor">
         <div class="sample-field">
           <label>Heading</label>
@@ -598,20 +614,10 @@
         </div>
       </div>
 
-      <div class="section-title"><h2>Suggested pair</h2></div>
       <div class="pair-counter" id="pairCounter">01 / 06</div>
-      <div class="pairs-grid" id="pairsGrid"></div>
+      <div class="carousel" id="carousel"></div>
 
       <div class="btn-row">
-        <button class="btn-primary" id="moreBtn">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/>
-            <path d="M21 3v5h-5"/>
-            <path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/>
-            <path d="M3 21v-5h5"/>
-          </svg>
-          Try another
-        </button>
         <button class="btn-secondary" id="newImageBtn">Upload new image</button>
       </div>
     </div>
@@ -641,11 +647,10 @@
   const resultBadge = $('resultBadge');
   const identifiedName = $('identifiedName');
   const identifiedDesc = $('identifiedDesc');
-  const pairsGrid = $('pairsGrid');
+  const carousel = $('carousel');
   const pairCounter = $('pairCounter');
   const sampleHeading = $('sampleHeading');
   const sampleBody = $('sampleBody');
-  const moreBtn = $('moreBtn');
   const newImageBtn = $('newImageBtn');
   const errorMsg = $('errorMsg');
   const errorMsg2 = $('errorMsg2');
@@ -665,6 +670,7 @@
     previewState.style.display = 'none';
     resultsSection.style.display = 'none';
     loading.style.display = 'none';
+    document.querySelector('main').classList.remove('results-active');
     allPairs = [];
     currentPairIndex = 0;
     hideError();
@@ -705,6 +711,7 @@
     previewState.style.display = 'block';
     resultsSection.style.display = 'none';
     loading.style.display = 'none';
+    document.querySelector('main').classList.remove('results-active');
   }
 
   function resizeImage(file, maxSize = 1024) {
@@ -793,6 +800,7 @@
   function displayResults(data) {
     resultsSection.style.display = 'block';
     previewState.style.display = 'none';
+    document.querySelector('main').classList.add('results-active');
 
     if (data.identified) {
       identifiedName.textContent = data.identified.name || 'Typeface';
@@ -802,34 +810,26 @@
 
     allPairs = data.pairs;
     currentPairIndex = 0;
-    renderCurrentPair();
+    renderAllPairs();
   }
 
-  function renderCurrentPair() {
-    const p = allPairs[currentPairIndex];
-    if (!p) return;
-
-    // Update counter
-    const total = allPairs.length;
-    const num = (currentPairIndex + 1).toString().padStart(2, '0');
-    const tot = total.toString().padStart(2, '0');
-    pairCounter.textContent = `${num} / ${tot}`;
-
-    // Load fonts
-    loadGoogleFont(p.heading_font, p.heading_weight);
-    loadGoogleFont(p.body_font, p.body_weight);
-
-    // Build card
+  function renderAllPairs() {
+    carousel.innerHTML = '';
     const headingText = sampleHeading.value || 'The Art of Typography';
     const bodyText = sampleBody.value || 'Good typography is invisible.';
     const fontSizeMap = { sm: ['1.5rem','0.82rem'], md: ['2.2rem','0.95rem'], lg: ['3.2rem','1rem'] };
 
-    const hFamilyUrl = p.heading_font.replace(/ /g,'+');
-    const bFamilyUrl = p.body_font.replace(/ /g,'+');
-    const importLine = `@import url('https://fonts.googleapis.com/css2?family=${hFamilyUrl}:wght@${p.heading_weight}&family=${bFamilyUrl}:wght@${p.body_weight}&display=swap');`;
+    allPairs.forEach(p => {
+      loadGoogleFont(p.heading_font, p.heading_weight);
+      loadGoogleFont(p.body_font, p.body_weight);
 
-    pairsGrid.innerHTML = `
-      <div class="pair-card">
+      const hFamilyUrl = p.heading_font.replace(/ /g,'+');
+      const bFamilyUrl = p.body_font.replace(/ /g,'+');
+      const importLine = `@import url('https://fonts.googleapis.com/css2?family=${hFamilyUrl}:wght@${p.heading_weight}&family=${bFamilyUrl}:wght@${p.body_weight}&display=swap');`;
+
+      const card = document.createElement('div');
+      card.className = 'pair-card';
+      card.innerHTML = `
         <div class="pair-specimen">
           <div class="pair-heading" style="font-family:'${p.heading_font}',serif; font-size:2.2rem; font-weight:${p.heading_weight};">${escapeHtml(headingText)}</div>
           <div class="pair-body" style="font-family:'${p.body_font}',sans-serif; font-size:0.95rem; font-weight:${p.body_weight};">${escapeHtml(bodyText)}</div>
@@ -851,36 +851,52 @@
             <a class="action-btn" href="https://fonts.google.com/specimen/${hFamilyUrl}" target="_blank" rel="noopener">Fonts ↗</a>
           </div>
         </div>
-      </div>
-    `;
+      `;
 
-    const card = pairsGrid.querySelector('.pair-card');
-
-    card.querySelectorAll('.size-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        card.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const [hSize, bSize] = fontSizeMap[btn.dataset.size];
-        card.querySelector('.pair-heading').style.fontSize = hSize;
-        card.querySelector('.pair-body').style.fontSize = bSize;
+      card.querySelectorAll('.size-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          card.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const [hSize, bSize] = fontSizeMap[btn.dataset.size];
+          card.querySelector('.pair-heading').style.fontSize = hSize;
+          card.querySelector('.pair-body').style.fontSize = bSize;
+        });
       });
+
+      card.querySelector('.copy-btn').addEventListener('click', function() {
+        navigator.clipboard.writeText(this.dataset.import).then(() => {
+          const orig = this.textContent;
+          this.textContent = '✓ Copied';
+          this.classList.add('copied');
+          setTimeout(() => { this.textContent = orig; this.classList.remove('copied'); }, 1800);
+        });
+      });
+
+      carousel.appendChild(card);
     });
 
-    card.querySelector('.copy-btn').addEventListener('click', function() {
-      navigator.clipboard.writeText(this.dataset.import).then(() => {
-        const orig = this.textContent;
-        this.textContent = '✓ Copied';
-        this.classList.add('copied');
-        setTimeout(() => { this.textContent = orig; this.classList.remove('copied'); }, 1800);
-      });
-    });
+    carousel.scrollLeft = 0;
+    currentPairIndex = 0;
+    updateCounter();
   }
 
-  // ── More button cycles through pairs ──
-  moreBtn.addEventListener('click', () => {
-    if (allPairs.length === 0) return;
-    currentPairIndex = (currentPairIndex + 1) % allPairs.length;
-    renderCurrentPair();
+  function updateCounter() {
+    const total = allPairs.length;
+    const num = (currentPairIndex + 1).toString().padStart(2, '0');
+    const tot = total.toString().padStart(2, '0');
+    pairCounter.textContent = `${num} / ${tot}`;
+  }
+
+  // Update counter as user scrolls through carousel
+  carousel.addEventListener('scroll', () => {
+    const firstCard = carousel.querySelector('.pair-card');
+    if (!firstCard) return;
+    const step = firstCard.offsetWidth + parseFloat(getComputedStyle(carousel).gap || 0);
+    const idx = Math.round(carousel.scrollLeft / step);
+    if (idx !== currentPairIndex && idx >= 0 && idx < allPairs.length) {
+      currentPairIndex = idx;
+      updateCounter();
+    }
   });
 
   // ── Dynamic Google Fonts loader ──
